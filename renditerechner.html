@@ -1,0 +1,514 @@
+<title>CVA Renditerechner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Layout: dunkles Kopfband mit Claim, darunter zwei Spalten – links drei Eingabeschritte, rechts das mitlaufende Ergebnis mit goldener Haarlinie. Basis: CVA Design System. */
+:root {
+  --surface: #f3f2ed;
+  --surface-raised: #ffffff;
+  --surface-inverse: #000000;
+  --gold-tint: #e8dfcc;
+  --ink: #000000;
+  --ink-muted: #5c5a52;
+  --ink-inverse: #ffffff;
+  --gold-text: #7a6132;
+  --gold-on-inverse: #c4a468;
+  --rule: #ad8b4c;
+  --hairline: #d6d2c4;
+  --border-strong: #8c8a82;
+  --focus: #000000;
+  --good: #2f6b3a;
+  --warn: #8a5a12;
+  --bad: #a13a2a;
+  --font-serif: "Noto Serif", Georgia, "Times New Roman", serif;
+  --font-sans: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --surface: #000000; --surface-raised: #141414; --surface-inverse: #141414;
+    --gold-tint: #2a2418; --ink: #ffffff; --ink-muted: #a8a69e; --ink-inverse: #ffffff;
+    --gold-text: #c4a468; --gold-on-inverse: #c4a468; --hairline: #2e2e2e; --border-strong: #6f6d66;
+    --focus: #c4a468; --good: #7cc48a; --warn: #e0b35e; --bad: #ef8a78;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --surface: #000000; --surface-raised: #141414; --surface-inverse: #141414;
+  --gold-tint: #2a2418; --ink: #ffffff; --ink-muted: #a8a69e; --ink-inverse: #ffffff;
+  --gold-text: #c4a468; --gold-on-inverse: #c4a468; --hairline: #2e2e2e; --border-strong: #6f6d66;
+  --focus: #c4a468; --good: #7cc48a; --warn: #e0b35e; --bad: #ef8a78;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--surface); color: var(--ink);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.6;
+}
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Kopf */
+.head { background: var(--surface-inverse); color: var(--ink-inverse); }
+.head .wrap { padding-block: 40px 36px; display: flex; gap: 24px; align-items: stretch; }
+.head .bar { width: 1px; background: var(--rule); flex: none; }
+.claim {
+  font-family: var(--font-serif); font-size: 11px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--gold-on-inverse); margin: 0 0 8px;
+}
+h1 {
+  font-family: var(--font-serif); font-weight: 700; font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.1; margin: 0 0 10px; text-wrap: balance;
+}
+.head p.lead { margin: 0; max-width: 60ch; color: var(--ink-inverse); opacity: .82; }
+
+/* Raster */
+main .wrap { padding-block: 32px 56px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 32px; align-items: start; }
+@media (max-width: 880px) { main .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+/* Schritte */
+.steps { display: grid; gap: 24px; min-width: 0; }
+fieldset {
+  margin: 0; border: 1px solid var(--hairline); background: var(--surface-raised);
+  padding: 20px 20px 22px; min-width: 0; display: grid; gap: 16px;
+}
+legend { padding: 0; float: left; width: 100%; display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+legend .num {
+  font-family: var(--font-serif); font-weight: 700; font-size: 13px; color: var(--gold-text);
+  letter-spacing: .08em; border-bottom: 1px solid var(--rule); padding-bottom: 1px;
+}
+legend .t { font-family: var(--font-serif); font-weight: 700; font-size: 20px; line-height: 1.3; }
+fieldset > * { clear: both; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 520px) { .row { grid-template-columns: minmax(0, 1fr); } }
+
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label, .lbl {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink);
+}
+.field .hint { font-size: 13px; line-height: 1.45; color: var(--ink-muted); }
+.input {
+  display: flex; align-items: center; border: 1px solid var(--border-strong); border-radius: 2px;
+  background: var(--surface-raised); min-width: 0;
+}
+.input:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.input input {
+  flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink);
+  font: 600 18px/1.2 var(--font-sans); padding: 10px 12px; text-align: right;
+  font-variant-numeric: tabular-nums; outline: none;
+}
+.input .unit { padding: 0 12px 0 0; color: var(--ink-muted); font-size: 15px; white-space: nowrap; }
+.input.big input { font-size: 22px; padding-block: 12px; }
+
+/* Nebenkosten-Liste */
+.costs { display: grid; border-top: 1px solid var(--hairline); }
+.cost {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) 110px; gap: 12px; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--hairline);
+}
+.cost input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--gold-text); margin: 0; }
+.cost input[type=checkbox]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.cost .name { font-size: 15px; line-height: 1.35; }
+.cost .name small { display: block; color: var(--ink-muted); font-size: 13px; }
+.cost .input input { font-size: 16px; padding: 7px 8px; }
+.cost .input .unit { padding-right: 8px; }
+.cost.off .name, .cost.off .input { opacity: .45; }
+.costsum { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; padding-top: 4px; font-variant-numeric: tabular-nums; }
+.costsum b { font-weight: 600; }
+
+/* Ergebnis */
+.result {
+  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px);
+  background: var(--surface-raised); border: 1px solid var(--hairline); border-top: 2px solid var(--rule);
+  padding: 22px 22px 20px; display: grid; gap: 20px; min-width: 0;
+}
+@media (max-width: 880px) { .result { position: static; } }
+.result h2 { font-family: var(--font-serif); font-size: 20px; line-height: 1.3; margin: 0; }
+.kpis { display: grid; grid-template-columns: 1fr 1px 1fr; gap: 18px; }
+.kpis .sep { background: var(--rule); }
+.kpi .lbl { color: var(--ink-muted); }
+.kpi .val {
+  font-family: var(--font-serif); font-weight: 700; font-size: clamp(32px, 4.4vw, 42px); line-height: 1.1;
+  font-variant-numeric: tabular-nums; margin-top: 4px; white-space: nowrap;
+}
+.kpi .sub { font-size: 13px; color: var(--ink-muted); line-height: 1.4; margin-top: 4px; }
+.chip {
+  display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; padding: 2px 8px; border: 1px solid currentColor; border-radius: 2px;
+}
+.chip.good { color: var(--good); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
+
+table { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+td { padding: 6px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; }
+tr.total td { font-weight: 600; border-bottom: 0; border-top: 1px solid var(--ink); }
+td.muted { color: var(--ink-muted); }
+
+.scen { background: var(--gold-tint); padding: 14px 16px; display: grid; gap: 6px; }
+.scen .lbl { color: var(--ink); }
+.scen .line { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.scen .line b { font-weight: 600; }
+.scen p { margin: 0; font-size: 13px; color: var(--ink-muted); line-height: 1.45; }
+
+.say { margin: 0; padding-left: 14px; border-left: 1px solid var(--rule); font-size: 15px; line-height: 1.55; display: grid; gap: 6px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+button {
+  font: 600 13px/1 var(--font-sans); letter-spacing: .08em; text-transform: uppercase;
+  padding: 12px 16px; border-radius: 2px; cursor: pointer; border: 1px solid var(--ink);
+  background: var(--ink); color: var(--surface);
+}
+button.ghost { background: transparent; color: var(--ink); border-color: var(--border-strong); }
+button:hover { opacity: .88; }
+button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.toast { font-size: 13px; color: var(--gold-text); min-height: 1em; }
+
+.note { font-size: 13px; color: var(--ink-muted); line-height: 1.5; max-width: 75ch; }
+.example {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-text);
+}
+footer .wrap { padding-block: 0 40px; }
+@media (prefers-reduced-motion: no-preference) { .kpi .val { transition: color .2s; } }
+</style>
+
+<header class="head">
+  <div class="wrap">
+    <div class="bar" aria-hidden="true"></div>
+    <div>
+      <p class="claim">CVA Group GmbH · Investment · Real Estate · Financing</p>
+      <h1>Renditerechner</h1>
+      <p class="lead">Brutto- und Nettomietrendite einer Anlageimmobilie in drei Schritten. Kaufpreis, Miete und Kosten eintragen, das Ergebnis rechnet sofort mit.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <form class="steps" id="calc" autocomplete="off" novalidate>
+      <p class="example" id="exampleTag">Beispielwerte – mit eigenen Zahlen überschreiben</p>
+
+      <fieldset>
+        <legend><span class="num">SCHRITT 1</span><span class="t">Kauf</span></legend>
+        <div class="row">
+          <div class="field">
+            <label for="price">Kaufpreis</label>
+            <div class="input big"><input id="price" inputmode="decimal" value="250.000"><span class="unit">€</span></div>
+          </div>
+          <div class="field">
+            <label for="reno">Sanierung / Ausstattung</label>
+            <div class="input big"><input id="reno" inputmode="decimal" value="0"><span class="unit">€</span></div>
+            <span class="hint">Einmalige Kosten bis zur Vermietung</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Kaufnebenkosten</span>
+          <div class="costs" id="costs">
+            <div class="cost" data-k="grest">
+              <input type="checkbox" id="c_grest" checked aria-label="Grunderwerbsteuer einrechnen">
+              <span class="name">Grunderwerbsteuer<small>vom Kaufpreis</small></span>
+              <div class="input"><input id="p_grest" inputmode="decimal" value="3,5" aria-label="Grunderwerbsteuer in Prozent"><span class="unit">%</span></div>
+            </div>
+            <div class="cost" data-k="gb">
+              <input type="checkbox" id="c_gb" checked aria-label="Grundbucheintragung einrechnen">
+              <span class="name">Grundbucheintragung<small>Eintragungsgebühr Eigentumsrecht</small></span>
+              <div class="input"><input id="p_gb" inputmode="decimal" value="1,1" aria-label="Grundbucheintragung in Prozent"><span class="unit">%</span></div>
+            </div>
+            <div class="cost" data-k="notar">
+              <input type="checkbox" id="c_notar" checked aria-label="Vertragserrichtung und Treuhand einrechnen">
+              <span class="name">Vertragserrichtung &amp; Treuhand<small>Notar/Anwalt inkl. USt – Schätzwert, anpassen</small></span>
+              <div class="input"><input id="p_notar" inputmode="decimal" value="1,5" aria-label="Vertragserrichtung in Prozent"><span class="unit">%</span></div>
+            </div>
+            <div class="cost" data-k="makler">
+              <input type="checkbox" id="c_makler" checked aria-label="Maklerprovision einrechnen">
+              <span class="name">Maklerprovision<small>max. 3 % + 20 % USt</small></span>
+              <div class="input"><input id="p_makler" inputmode="decimal" value="3,6" aria-label="Maklerprovision in Prozent"><span class="unit">%</span></div>
+            </div>
+          </div>
+          <div class="costsum"><span>Nebenkosten gesamt</span><b id="ncSum">–</b></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="num">SCHRITT 2</span><span class="t">Miete</span></legend>
+        <div class="row">
+          <div class="field">
+            <label for="rent">Monatsmiete netto</label>
+            <div class="input big"><input id="rent" inputmode="decimal" value="850"><span class="unit">€ / Mon.</span></div>
+            <span class="hint">Hauptmietzins ohne Betriebskosten und ohne USt, inkl. Stellplatz o. Ä.</span>
+          </div>
+          <div class="field">
+            <label for="area">Nutzfläche <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-muted)">(optional)</span></label>
+            <div class="input big"><input id="area" inputmode="decimal" value="68"><span class="unit">m²</span></div>
+            <span class="hint">Für Kaufpreis und Miete je m²</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="num">SCHRITT 3</span><span class="t">Laufende Kosten</span></legend>
+        <div class="row">
+          <div class="field">
+            <label for="opex">Nicht umlegbare Kosten</label>
+            <div class="input big"><input id="opex" inputmode="decimal" value="120"><span class="unit">€ / Mon.</span></div>
+            <span class="hint">Verwaltung, Instandhaltung, Rücklage-Anteil, nicht umlegbare Betriebskosten</span>
+          </div>
+          <div class="field">
+            <label for="vac">Mietausfall / Leerstand</label>
+            <div class="input big"><input id="vac" inputmode="decimal" value="2"><span class="unit">% der Miete</span></div>
+            <span class="hint">Pauschale für Leerstand und Zahlungsausfälle</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="button" class="ghost" id="resetBtn">Beispiel wiederherstellen</button>
+        <button type="button" class="ghost" id="clearBtn">Alle Felder leeren</button>
+      </div>
+    </form>
+
+    <aside class="result" aria-live="polite">
+      <h2>Ergebnis</h2>
+      <div class="kpis">
+        <div class="kpi">
+          <div class="lbl">Bruttorendite</div>
+          <div class="val" id="gross">–</div>
+          <div class="sub">Jahresmiete ÷ Kaufpreis</div>
+        </div>
+        <div class="sep" aria-hidden="true"></div>
+        <div class="kpi">
+          <div class="lbl">Nettorendite</div>
+          <div class="val" id="net">–</div>
+          <div class="sub">Reinertrag ÷ Gesamtinvestition</div>
+          <span class="chip" id="netChip" hidden></span>
+        </div>
+      </div>
+
+      <table aria-label="Aufstellung">
+        <tbody id="tbl"></tbody>
+      </table>
+
+      <div class="scen">
+        <span class="lbl">Vorsichtiges Szenario</span>
+        <div class="line"><span>Nettorendite</span><b id="netCons">–</b></div>
+        <p>Mietausfall +3 Prozentpunkte, laufende Kosten +25 %.</p>
+      </div>
+
+      <div class="say" id="say"></div>
+
+      <div class="actions">
+        <button type="button" id="copyBtn">Ergebnis kopieren</button>
+      </div>
+      <div class="toast" id="toast" role="status"></div>
+    </aside>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="note">Vereinfachte Berechnung vor Steuern und ohne Finanzierung (keine Zinsen, keine AfA, keine Immobilienertragsteuer). Grunderwerbsteuer 3,5 % und Grundbuch-Eintragungsgebühr 1,1 % sind die österreichischen Regelsätze; Vertragserrichtung und Maklerprovision bitte je Objekt anpassen. Die Einstufung der Nettorendite ist eine grobe Orientierung, keine Anlageempfehlung. CVA Group GmbH, Theiß.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NUM_IDS = ['price', 'reno', 'rent', 'area', 'opex', 'vac', 'p_grest', 'p_gb', 'p_notar', 'p_makler'];
+  var CHK_IDS = ['c_grest', 'c_gb', 'c_notar', 'c_makler'];
+  var DEFAULTS = {};
+  NUM_IDS.forEach(function (id) { DEFAULTS[id] = $(id).value; });
+  CHK_IDS.forEach(function (id) { DEFAULTS[id] = $(id).checked; });
+  var KEY = 'cva-renditerechner-v1';
+
+  // "250.000" / "250 000" / "3,5" / "3.5" -> Zahl
+  function parse(s) {
+    s = String(s || '').replace(/[\s €%]/g, '');
+    if (!s) return 0;
+    if (s.indexOf(',') > -1) s = s.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    var n = parseFloat(s);
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+  var nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+  var nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  var nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function eur(n) { return '€ ' + nf0.format(Math.round(n)); }
+  function pct(n) { return nf2.format(n) + ' %'; }
+
+  function read() {
+    var v = {};
+    NUM_IDS.forEach(function (id) { v[id] = parse($(id).value); });
+    CHK_IDS.forEach(function (id) { v[id] = $(id).checked; });
+    return v;
+  }
+
+  function calc(v, vacAdd, costMul) {
+    var price = v.price;
+    var ncPct = (v.c_grest ? v.p_grest : 0) + (v.c_gb ? v.p_gb : 0) + (v.c_notar ? v.p_notar : 0) + (v.c_makler ? v.p_makler : 0);
+    var nc = price * ncPct / 100;
+    var invest = price + nc + v.reno;
+    var rentY = v.rent * 12;
+    var vacPct = Math.min(100, v.vac + (vacAdd || 0));
+    var vacY = rentY * vacPct / 100;
+    var opexY = v.opex * 12 * (costMul || 1);
+    var noi = rentY - vacY - opexY;
+    return {
+      price: price, ncPct: ncPct, nc: nc, invest: invest, rentY: rentY, vacY: vacY, vacPct: vacPct,
+      opexY: opexY, noi: noi,
+      gross: price > 0 ? rentY / price * 100 : null,
+      net: invest > 0 && rentY > 0 ? noi / invest * 100 : null,
+      factor: rentY > 0 ? price / rentY : null
+    };
+  }
+
+  function rate(net) {
+    if (net == null) return null;
+    if (net < 2.5) return ['bad', 'Schwach'];
+    if (net < 4) return ['warn', 'Solide'];
+    return ['good', 'Stark'];
+  }
+
+  var last = null;
+  function render() {
+    var v = read();
+    var r = calc(v, 0, 1);
+    var c = calc(v, 3, 1.25);
+    last = { v: v, r: r, c: c };
+
+    CHK_IDS.forEach(function (id) {
+      $(id).closest('.cost').classList.toggle('off', !v[id]);
+    });
+    $('ncSum').textContent = v.price ? eur(r.nc) + '  (' + nf1.format(r.ncPct) + ' %)' : '–';
+
+    $('gross').textContent = r.gross == null ? '–' : pct(r.gross);
+    $('net').textContent = r.net == null ? '–' : pct(r.net);
+    $('netCons').textContent = c.net == null ? '–' : pct(c.net);
+    var rt = rate(r.net), chip = $('netChip');
+    if (rt) { chip.hidden = false; chip.className = 'chip ' + rt[0]; chip.textContent = rt[1]; }
+    else chip.hidden = true;
+
+    var rows = [
+      ['Kaufpreis', eur(r.price)],
+      ['+ Nebenkosten', eur(r.nc)]
+    ];
+    if (v.reno) rows.push(['+ Sanierung / Ausstattung', eur(v.reno)]);
+    rows.push(['Gesamtinvestition', eur(r.invest), 'total']);
+    rows.push(['Jahresnettomiete', eur(r.rentY)]);
+    rows.push(['− Mietausfall (' + nf1.format(r.vacPct) + ' %)', eur(r.vacY)]);
+    rows.push(['− Nicht umlegbare Kosten', eur(r.opexY)]);
+    rows.push(['Reinertrag p. a.', eur(r.noi), 'total']);
+    if (r.factor) rows.push(['Kaufpreisfaktor', nf1.format(r.factor) + '-fach', 'muted']);
+    if (v.area) {
+      rows.push(['Kaufpreis je m²', eur(r.price / v.area), 'muted']);
+      rows.push(['Miete je m² / Monat', '€ ' + nf2.format(v.rent / v.area), 'muted']);
+    }
+    var tb = $('tbl'); tb.innerHTML = '';
+    rows.forEach(function (row) {
+      var tr = document.createElement('tr');
+      if (row[2] === 'total') tr.className = 'total';
+      var a = document.createElement('td'), b = document.createElement('td');
+      a.textContent = row[0]; b.textContent = row[1];
+      if (row[2] === 'muted') { a.className = 'muted'; }
+      tr.appendChild(a); tr.appendChild(b); tb.appendChild(tr);
+    });
+
+    var say = $('say'); say.innerHTML = '';
+    var lines = [];
+    if (r.rentY > 0 && r.noi > 0) {
+      lines.push('Von 100 € Jahresmiete bleiben nach Mietausfall und Kosten rund ' + nf0.format(r.noi / r.rentY * 100) + ' € übrig.');
+    } else if (r.rentY > 0) {
+      lines.push('Die laufenden Kosten und der Mietausfall übersteigen die Miete. Das Objekt trägt sich so nicht.');
+    }
+    if (r.factor) lines.push('Der Kaufpreis entspricht dem ' + nf1.format(r.factor) + '-Fachen der Jahresnettomiete.');
+    if (r.price > 0 && r.nc + v.reno > 0) lines.push('Nebenkosten' + (v.reno ? ' und Sanierung' : '') + ' erhöhen den Kapitaleinsatz um ' + nf1.format((r.nc + v.reno) / r.price * 100) + ' %.');
+    if (!lines.length) lines.push('Kaufpreis und Monatsmiete eintragen, dann erscheint hier die Einordnung.');
+    lines.forEach(function (t) { var p = document.createElement('div'); p.textContent = t; say.appendChild(p); });
+
+    var isDefault = NUM_IDS.every(function (id) { return $(id).value === DEFAULTS[id]; }) &&
+                    CHK_IDS.every(function (id) { return $(id).checked === DEFAULTS[id]; });
+    $('exampleTag').hidden = !isDefault;
+
+    try {
+      var s = {};
+      NUM_IDS.forEach(function (id) { s[id] = $(id).value; });
+      CHK_IDS.forEach(function (id) { s[id] = $(id).checked; });
+      localStorage.setItem(KEY, JSON.stringify(s));
+    } catch (e) {}
+  }
+
+  function fmtField(el) {
+    var id = el.id, n = parse(el.value);
+    if (!el.value.trim()) return;
+    if (id.indexOf('p_') === 0 || id === 'vac') el.value = String(n).replace('.', ',');
+    else if (id === 'area') el.value = String(Math.round(n * 100) / 100).replace('.', ',');
+    else el.value = nf0.format(Math.round(n));
+  }
+
+  function setAll(src) {
+    NUM_IDS.forEach(function (id) { if (src[id] != null) $(id).value = src[id]; });
+    CHK_IDS.forEach(function (id) { if (src[id] != null) $(id).checked = !!src[id]; });
+  }
+
+  try {
+    var saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (saved) setAll(saved);
+  } catch (e) {}
+
+  var form = $('calc');
+  form.addEventListener('input', render);
+  form.addEventListener('change', render);
+  form.addEventListener('submit', function (e) { e.preventDefault(); });
+  NUM_IDS.forEach(function (id) {
+    $(id).addEventListener('blur', function () { fmtField(this); render(); });
+    $(id).addEventListener('focus', function () { this.select(); });
+  });
+  $('resetBtn').addEventListener('click', function () { setAll(DEFAULTS); render(); });
+  $('clearBtn').addEventListener('click', function () {
+    ['price', 'reno', 'rent', 'area', 'opex'].forEach(function (id) { $(id).value = ''; });
+    render(); $('price').focus();
+  });
+
+  function summary() {
+    var v = last.v, r = last.r, c = last.c;
+    var t = [
+      'Renditeberechnung – CVA Group GmbH',
+      'Kaufpreis: ' + eur(r.price),
+      'Nebenkosten: ' + eur(r.nc) + ' (' + nf1.format(r.ncPct) + ' %)',
+    ];
+    if (v.reno) t.push('Sanierung/Ausstattung: ' + eur(v.reno));
+    t.push('Gesamtinvestition: ' + eur(r.invest));
+    t.push('Monatsmiete netto: ' + eur(v.rent) + ' (Jahr: ' + eur(r.rentY) + ')');
+    t.push('Mietausfall: ' + nf1.format(r.vacPct) + ' %, nicht umlegbare Kosten: ' + eur(r.opexY) + ' p. a.');
+    t.push('Reinertrag p. a.: ' + eur(r.noi));
+    t.push('');
+    t.push('Bruttorendite: ' + (r.gross == null ? '–' : pct(r.gross)));
+    t.push('Nettorendite: ' + (r.net == null ? '–' : pct(r.net)));
+    t.push('Nettorendite vorsichtig: ' + (c.net == null ? '–' : pct(c.net)));
+    if (r.factor) t.push('Kaufpreisfaktor: ' + nf1.format(r.factor) + '-fach');
+    t.push('');
+    t.push('Vereinfachte Berechnung vor Steuern und ohne Finanzierung.');
+    return t.join('\n');
+  }
+  $('copyBtn').addEventListener('click', function () {
+    var text = summary(), toast = $('toast');
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      toast.textContent = ok ? 'Ergebnis kopiert.' : 'Kopieren nicht möglich – bitte Werte manuell übernehmen.';
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () { toast.textContent = 'Ergebnis kopiert.'; }, fallback);
+    } catch (e) { fallback(); }
+    setTimeout(function () { toast.textContent = ''; }, 3000);
+  });
+
+  render();
+})();
+</script>
